@@ -1,0 +1,22 @@
+[project]
+name = "machine-learning-from-scratch"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy>=2.4.4",
+    "scikit-learn>=1.8.0",  # only for demo purposes
+    "tqdm>=4.67.3",
+]
+
+[tool.ruff]
+exclude = [
+    ".venv",
+    ".ruff_cache",
+]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["N806", "N803"]  # ignore function variable and argument naming convention since features are conventionally named X_*
