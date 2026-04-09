@@ -77,7 +77,7 @@ Each algorithm lives in its own folder:
 Clone the repository and run any of the demo scripts:
 
 ```
-python random_forest/demo.py
+python -m machine_learning_from_scratch/random_forest/demo.py
 ```
 
 Each demo is intentionally simple and meant to illustrate how the algorithm works rather than provide comprehensive functionality.
