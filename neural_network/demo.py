@@ -1,4 +1,4 @@
-"""Demo of the Neural Network on a simple artificial dataset."""  # noqa: INP001
+"""Demo of the Neural Network on a simple artificial dataset."""
 
 import numpy as np
 from machine_learning_from_scratch.neural_network.neural_network import DenseLayer, NeuralNetwork, ReLu, Sigmoid

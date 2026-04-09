@@ -1,4 +1,4 @@
-"""Implements a Neural Network from scratch in pure python plus numpy."""  # noqa: INP001
+"""Implements a Neural Network from scratch in pure python plus numpy."""
 
 from __future__ import annotations
 
