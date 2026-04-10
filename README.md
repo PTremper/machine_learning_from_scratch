@@ -24,12 +24,22 @@ Each algorithm is implemented in its own module with minimal abstraction and a f
 
 ### Supervised Learning
 
+#### Classification Models
+
 * Decision Tree
+* Random Forest
+* Support Vector Machine
 
-### Neural Networks
+#### Neural Networks
+* Feedforward Neural Network (Multilayer Perceptron)
 
-* Feedforward Neural Network
+#### Statistical Models
 
+* Gaussian Process Regression
+
+### Reinforcement Learning
+
+* Q-Learning
 
 *(This list may grow over time as more methods are added.)*
 
@@ -45,12 +55,24 @@ Each algorithm lives in its own folder:
 │   ├── decision_tree.py
 │   └── demo.py
 │
+├── gaussian_process_regression/
+│   ├── gaussian_process_regression.py
+│   └── demo.py
+│
 ├── neural_network/
 │   ├── neural_network.py
 │   └── demo.py
 │
 ├── q_learning/
 │   ├── q_learning.py
+│   └── demo.py
+│
+├── random_forest/
+│   ├── random_forest.py
+│   └── demo.py
+│
+├── support_vector_machine/
+│   ├── support_vector_machine.py
 │   └── demo.py
 ```
 
@@ -76,9 +98,21 @@ Each algorithm lives in its own folder:
 
 Clone the repository and run any of the demo scripts:
 
+Run `uv sync` to install required libraries into the venv. (only NumPy and tqdm for the actual code. All other libraries (like matplotlib or scikit-learn datasets) are for the demo scripts.)
+
+Then run any demo script like
+
 ```
-python -m machine_learning_from_scratch/random_forest/demo.py
+uv run -m machine_learning_from_scratch.random_forest.demo.py
 ```
+
+or 
+
+```
+python -m machine_learning_from_scratch.random_forest.demo.py
+```
+
+from the root folder. 
 
 Each demo is intentionally simple and meant to illustrate how the algorithm works rather than provide comprehensive functionality.
 
