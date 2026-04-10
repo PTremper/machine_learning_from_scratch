@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 class NeuralNetwork:
@@ -18,7 +23,7 @@ class NeuralNetwork:
             layer,
         )  # Add a layer to the network by appending it to the list of layers
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         """Perform a forward pass through the network."""
         for layer in self.layers:
             x = layer.forward(
@@ -26,7 +31,7 @@ class NeuralNetwork:
             )  # Perform a forward pass through each layer of the network
         return x  # Return the final output of the forward pass
 
-    def backward(self, loss_gradient: np.ndarray, learning_rate: float) -> np.ndarray:
+    def backward(self, loss_gradient: NDArray[np.float64], learning_rate: float) -> NDArray[np.float64]:
         """Perform backpropagation through the network."""
         for layer in reversed(self.layers):
             loss_gradient = layer.backward(
@@ -42,11 +47,11 @@ class Activation:
     def __init__(self) -> None:
         """Initialize the activation function."""
 
-    def derivative(self, x: np.ndarray) -> np.ndarray:
+    def derivative(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         """Compute the derivative of the activation function."""
         return x
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         """Compute the forward pass of the activation function."""
         return x
 
@@ -58,11 +63,11 @@ class ReLu(Activation):
         """Initialize the ReLu activation function."""
         super().__init__()
 
-    def derivative(self, x: np.ndarray) -> np.ndarray:
+    def derivative(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         """Compute the derivative of the ReLu activation function."""
         return (x > 0).astype(x.dtype)
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         """Compute the forward pass of the ReLu activation function."""
         return np.maximum(0, x)
 
@@ -74,12 +79,12 @@ class Sigmoid(Activation):
         """Initialize the sigmoid activation function."""
         super().__init__()
 
-    def derivative(self, x: np.ndarray) -> np.ndarray:
+    def derivative(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         """Compute the derivative of the sigmoid activation function."""
         sigmoid_output = self.forward(x)
         return sigmoid_output * (1 - sigmoid_output)
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         """Compute the forward pass of the sigmoid activation function."""
         return 1 / (1 + np.exp(-x))
 
@@ -93,13 +98,13 @@ class ReLuSigmoid(Activation):
         self.relu = ReLu()
         self.sigmoid = Sigmoid()
 
-    def derivative(self, x: np.ndarray) -> np.ndarray:
+    def derivative(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         """Compute the derivative of the ReLuSigmoid activation function."""
         return self.relu.derivative(self.sigmoid.forward(x)) * self.sigmoid.derivative(
             x,
         )  # chain rule
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         """Compute the forward pass of the ReLuSigmoid activation function."""
         return self.relu.forward(self.sigmoid.forward(x))
 
@@ -115,17 +120,17 @@ class DenseLayer:
     ) -> None:
         """Initialize the dense layer with random weights and zeros biases."""
         rng = np.random.default_rng()
-        self.weights: np.ndarray = rng.standard_normal((input_size, output_size))
-        self.bias: np.ndarray = np.zeros((1, output_size))
-        self.input: np.ndarray  # Store the input data for use during backpropagation
-        self.output: np.ndarray  # Store the output data for use during backpropagation
+        self.weights: NDArray[np.float64] = rng.standard_normal((input_size, output_size))
+        self.bias: NDArray[np.float64] = np.zeros((1, output_size))
+        self.input: NDArray[np.float64]  # Store the input data for use during backpropagation
+        self.output: NDArray[np.float64]  # Store the output data for use during backpropagation
 
         if activation is None:
             self.activation = Activation()
         else:
             self.activation = activation
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         """Compute the forward pass of the dense layer."""
         # Ensure input is a 2D array: pads shape if not a batch
         self.input = np.array(x, ndmin=2)
@@ -138,7 +143,7 @@ class DenseLayer:
 
         return self.output
 
-    def backward(self, loss_gradient: np.ndarray, learning_rate: float) -> np.ndarray:
+    def backward(self, loss_gradient: NDArray[np.float64], learning_rate: float) -> NDArray[np.float64]:
         """Compute the backward pass of the dense layer."""
         # Apply the derivative of the activation function
         loss_gradient *= self.activation.derivative(self.output)

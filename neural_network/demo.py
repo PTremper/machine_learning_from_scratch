@@ -45,7 +45,7 @@ def main() -> None:
     # Test the trained network
     for i in range(len(X)):
         output = nn.forward(X[i])
-        print(f"Input: {X[i]}, Predicted Output: {output}, Label: {y[i]}")  # noqa: T201
+        print(f"Input: {X[i]}, Predicted Output: {output}, Label: {y[i]}")
 
 
 if __name__ == "__main__":
