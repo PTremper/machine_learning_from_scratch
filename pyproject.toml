@@ -5,10 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "matplotlib>=3.10.8", # only for demo purposes
     "numpy>=2.4.4",
-    "scikit-learn>=1.8.0",  # only for demo purposes
+    "scikit-learn>=1.8.0", # only for demo purposes
     "tqdm>=4.67.3",
 ]
+
+[tool.ty.environment]
+extra-paths = [".."]  # add root folder to path for language server to resolve imports
 
 [tool.ruff]
 exclude = [
@@ -19,4 +23,15 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["N806", "N803"]  # ignore function variable and argument naming convention since features are conventionally named X_*
+ignore = [
+    "N806",  # ignore function variable naming convention since features are conventionally named X_*
+    "N803",  # ignore argument naming convention since features are conventionally named X_*
+    "T201",  # ignore print statements since demo code uses them intentionally
+    ]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["D104"]
+
+[tool.ruff.lint.pydocstyle]
+# Switch the docstring convention from "google" to "numpy".
+convention = "numpy"
