@@ -31,7 +31,11 @@ class NeuralNetwork:
             )  # Perform a forward pass through each layer of the network
         return x  # Return the final output of the forward pass
 
-    def backward(self, loss_gradient: NDArray[np.float64], learning_rate: float) -> NDArray[np.float64]:
+    def backward(
+        self,
+        loss_gradient: NDArray[np.float64],
+        learning_rate: float,
+    ) -> NDArray[np.float64]:
         """Perform backpropagation through the network."""
         for layer in reversed(self.layers):
             loss_gradient = layer.backward(
@@ -143,7 +147,11 @@ class DenseLayer:
 
         return self.output
 
-    def backward(self, loss_gradient: NDArray[np.float64], learning_rate: float) -> NDArray[np.float64]:
+    def backward(
+        self,
+        loss_gradient: NDArray[np.float64],
+        learning_rate: float,
+    ) -> NDArray[np.float64]:
         """Compute the backward pass of the dense layer."""
         # Apply the derivative of the activation function
         loss_gradient *= self.activation.derivative(self.output)

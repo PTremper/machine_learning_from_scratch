@@ -31,7 +31,9 @@ def main() -> None:
     # generate data
     x_min, x_max, x_steps = [0, 10, 11]
 
-    X = (np.linspace(x_min, x_max, x_steps) + rng.normal(0, (x_max - x_min) / x_steps, x_steps)).reshape(-1, 1)
+    X = (
+        np.linspace(x_min, x_max, x_steps) + rng.normal(0, (x_max - x_min) / x_steps, x_steps)
+    ).reshape(-1, 1)
     y = true_function(X.reshape(-1))
 
     # initialize kernel and GP
@@ -54,12 +56,27 @@ def main() -> None:
     )
     plt.grid()
     plt.plot(x_axis, mean, color="blue", label="GPR Prediction")
-    plt.fill_between(x=x_axis, y1=mean + np.sqrt(cov), y2=mean - np.sqrt(cov), color="orange", alpha=0.8, label="1 std")
-    plt.plot(x_axis, true_function(x_axis), color="black", linestyle="dashed", label="True Function")
+    plt.fill_between(
+        x=x_axis,
+        y1=mean + np.sqrt(cov),
+        y2=mean - np.sqrt(cov),
+        color="orange",
+        alpha=0.8,
+        label="1 std",
+    )
+    plt.plot(
+        x_axis,
+        true_function(x_axis),
+        color="black",
+        linestyle="dashed",
+        label="True Function",
+    )
     plt.scatter(X.reshape(-1), y, c="red", label="Data Points")
     plt.legend()
 
-    show_or_save("machine_learning_from_scratch/gaussian_process_regression/gaussian_process_regression_demo.png")
+    show_or_save(
+        "machine_learning_from_scratch/gaussian_process_regression/gaussian_process_regression_demo.png",
+    )
 
 
 if __name__ == "__main__":

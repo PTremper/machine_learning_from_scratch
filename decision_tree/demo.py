@@ -1,7 +1,7 @@
 """Demo of the Decision Tree classifier on a benchmark dataset."""
 
-import numpy as np
 from machine_learning_from_scratch.decision_tree.decision_tree import DecisionTree
+from machine_learning_from_scratch.utils.metrics import accuracy
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 
@@ -19,15 +19,6 @@ clf = DecisionTree()
 clf.fit(X_train, y_train)
 predictions = clf.predict(X_test)
 
-
-def accuracy(y_test: np.ndarray, y_pred: np.ndarray) -> float:
-    """Calculate the accuracy of the predictions.
-
-    accuracy = (true positives + true negatives) / total
-    """
-    return np.sum(y_test == y_pred) / len(y_test)
-
-
 acc = accuracy(y_test, predictions)
 
-print(f"Accuracy: {acc:.3f}")  # noqa: T201
+print(f"Accuracy: {acc:.3f}")
