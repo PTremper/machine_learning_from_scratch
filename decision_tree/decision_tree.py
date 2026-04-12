@@ -9,64 +9,54 @@ This implementation is based on:
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING, Literal, Self
+from typing import Self
 
 import numpy as np
-
-if TYPE_CHECKING:
-    from numpy.typing import NDArray
+from numpy.typing import NDArray
 
 
 class Node:
-    """A node in the decision tree."""
+    """
+    A single node in the decision tree.
+
+    A node can either be:
+    - an internal node (contains a split rule), or
+    - a leaf node (contains a predicted class value)
+    """
 
     def __init__(
         self,
-        feature: int | None = None,
+        feature_index: int | None = None,
         threshold: float | None = None,
         left: Self | None = None,
         right: Self | None = None,
         *,
-        value: Literal[0, 1] | None = None,
+        value: int | None = None,
     ) -> None:
-        """Initialize a node in the decision tree.
-
-        Parameters
-        ----------
-        feature : int, optional
-            The index of the feature to split on, by default None.
-        threshold : float, optional
-            The threshold value for the split, by default None.
-        left : Node | None, optional
-            The left child node, by default None.
-        right : Node | None, optional
-            The right child node, by default None.
-        value : Literal[0, 1] | None, optional
-            The value of the node if it is a leaf node, by default None.
-
-        """
-        self.feature = feature
+        self.feature_index = feature_index
         self.threshold = threshold
         self.left = left
         self.right = right
+        # If value is set, this is a leaf node
         self.value = value
 
-    def is_leaf_node(self) -> bool:
-        """Return True if the node is a leaf node (if its value is not None)."""
+    def is_leaf(self) -> bool:
+        """Return True if this node is a leaf (i.e. has a prediction)."""
         return self.value is not None
 
 
 class DecisionTree:
-    """A decision tree classifier.
+    """A simple decision tree classifier.
 
-    Parameters
-    ----------
-    min_samples_split : int, optional
-        The minimum number of samples required to split an internal node, by default 2.
-    max_depth : int, optional
-        The maximum depth of the tree, by default 100.
-    n_features : int | None, optional
-        The number of features to consider when looking for the best split, by default None.
+    The tree works by repeatedly asking yes/no questions of the form:
+
+        "Is feature_j <= threshold?"
+
+    Each question splits the dataset into two parts. The goal is to make
+    those parts as "pure" as possible (i.e. containing mostly one class).
+
+    Over time, the data is split into smaller and smaller subsets until
+    we stop and assign a class label to each final subset (leaf node).
 
     Methods
     -------
@@ -81,39 +71,46 @@ class DecisionTree:
         self,
         min_samples_split: int = 2,
         max_depth: int = 100,
-        n_features: int | None = None,
+        max_features: int | None = None,
     ) -> None:
         """Initialize the decision tree classifier.
 
         Parameters
         ----------
-        min_samples_split : int, optional
-            The minimum number of samples required to split an internal node, by default 2.
-        max_depth : int, optional
-            The maximum depth of the tree, by default 100.
-        n_features : int | None, optional
-            The number of features to consider when looking for the best split, by default None.
+        min_samples_split: int, default=2
+            Minimum number of samples required to keep splitting.
+            If a node has fewer samples than this, it becomes a leaf.
 
+        max_depth: int, default=100
+            Maximum depth of the tree. Prevents infinite growth.
+
+        max_features: int | None, default=None
+            Number of features (dimensions) to consider at each split.
+            If None, all features are used (not a random subset).
         """
         self.rng = np.random.default_rng()
 
-        self.min_samples_split: int = min_samples_split
-        self.max_depth: int = max_depth
-        self.n_features: int | None = n_features
+        self.min_samples_split = min_samples_split
+        self.max_depth = max_depth
+        self.max_features = max_features
+
         self.root: Node | None = None
 
     def fit(self, X: NDArray[np.float64], y: NDArray[np.integer]) -> None:
-        """Fit the decision tree to the training data.
+        """Build the decision tree from the training data.
 
-        Parameters
-        ----------
-        X : NDArray[np.float64]
-            The input features.
-        y : NDArray[np.integer]
-            The target labels.
+        X: shape (n_samples, n_features)
+        y: shape (n_samples,)
 
+        Each row in X is a sample. Each column is a feature (dimension).
         """
-        self.n_features = X.shape[1] if not self.n_features else min(X.shape[1], self.n_features)
+        n_features_total = X.shape[1]
+
+        if self.max_features is None:
+            self.max_features = n_features_total
+        else:
+            self.max_features = min(n_features_total, self.max_features)
+
         self.root = self._grow_tree(X, y)
 
     def _grow_tree(
@@ -122,228 +119,170 @@ class DecisionTree:
         y: NDArray[np.integer],
         depth: int = 0,
     ) -> Node:
-        """Grow a decision tree recursively.
+        """Recursively build the tree.
 
-        Parameters
-        ----------
-        X : NDArray[np.float64]
-            The input features.
-        y : NDArray[np.integer]
-            The target labels.
-        depth : int, optional
-            The current depth of the tree, by default 0. Restricted by self.max_depth.
-
-        Returns
-        -------
-        Node
-            The root node of the tree.
-
+        At each step:
+        - check if we should stop
+        - otherwise find the best split
+        - split the data
+        - recurse on both sides
         """
-        n_samples, n_feats = X.shape
-        n_labels = len(np.unique(y))
+        n_samples, n_features_total = X.shape
+        n_classes = len(np.unique(y))
 
-        # check the stopping criteria
-        if depth >= self.max_depth or n_labels == 1 or n_samples < self.min_samples_split:
+        # stopping conditions: if true, return node as leaf node
+        if depth >= self.max_depth or n_classes == 1 or n_samples < self.min_samples_split:
             leaf_value = self._most_common_label(y)
-            # if the stopping criteria are met, return a leaf node with the most common label as value
             return Node(value=leaf_value)
 
-        feat_idxs: NDArray[np.integer] = self.rng.choice(
-            n_feats,
-            self.n_features,
+        # choose random subset of features (dimensions)
+        feature_indices = self.rng.choice(
+            n_features_total,
+            self.max_features,
             replace=False,
         )
 
-        # find the best split
-        best_feature, best_thresh = self._best_split(X, y, feat_idxs)
+        # find best split among those features
+        best_feature, best_threshold = self._best_split(X, y, feature_indices)
 
-        # create child nodes
-        left_idxs, right_idxs = self._split(X[:, best_feature], best_thresh)
-        left = self._grow_tree(X[left_idxs, :], y[left_idxs], depth + 1)
-        right = self._grow_tree(X[right_idxs, :], y[right_idxs], depth + 1)
-        return Node(best_feature, best_thresh, left, right)
+        # split dataset
+        left_indices, right_indices = self._split(X[:, best_feature], best_threshold)
+
+        # recursively grow children
+        left_child = self._grow_tree(X[left_indices], y[left_indices], depth + 1)
+        right_child = self._grow_tree(X[right_indices], y[right_indices], depth + 1)
+
+        return Node(best_feature, best_threshold, left_child, right_child)
 
     def _best_split(
         self,
         X: NDArray[np.float64],
         y: NDArray[np.integer],
-        feat_idxs: NDArray[np.integer],
+        feature_indices: NDArray[np.integer],
     ) -> tuple[int, float]:
-        """Calculate the best feature split based on highest information gain.
-
-        Parameters
-        ----------
-        X : NDArray[np.float64]
-            The input features.
-        y : NDArray[np.integer]
-            The target labels.
-        feat_idxs : NDArray[np.integer]
-            The indices of the features to consider for splitting.
-
-        Returns
-        -------
-        tuple[int, float]
-            The index of the best feature and the best threshold for the split.
-
         """
-        best_gain: float = -1  # -1 is overwritten by any valid gain as entropy is always >= 0
-        split_idx: int | None = None
-        split_threshold: float | None = None
+        Find the best (feature, threshold) pair to split on.
 
-        if not feat_idxs.size:
-            msg = "No features to consider for splitting."
-            raise ValueError(msg)
+        Strategy:
+        - loop over selected features
+        - for each feature, try all possible thresholds
+        - pick the split with highest information gain
+        """
+        best_gain = -1.0  # -1 is overwritten by any valid gain as entropy is always >= 0
+        best_feature: int | None = None
+        best_threshold: float | None = None
 
-        for feat_idx in feat_idxs:
-            X_column = X[:, feat_idx]
-            thresholds = np.unique(X_column)
+        for feature_idx in feature_indices:
+            feature_values = X[:, feature_idx]
+            thresholds = np.unique(feature_values)
 
-            for thr in thresholds:
+            for threshold in thresholds:
                 # calculate the information gain
-                gain = self._information_gain(y, X_column, thr)
+                gain = self._information_gain(y, feature_values, threshold)
 
                 if gain > best_gain:
                     best_gain = gain
                     # explictly type casting to pacify the type checker
                     # type checker can't infer the type of feat_idx and thr in the loop
                     # casting numpy types to built-in types is fine here
-                    split_idx = int(feat_idx)
-                    split_threshold = float(thr)
+                    best_feature = int(feature_idx)
+                    best_threshold = float(threshold)
 
-        if split_idx is None or split_threshold is None:
-            msg = "split_idx and split_threshold should be set by the loop above."
+        if best_feature is None or best_threshold is None:
+            msg = "Failed to find a valid split."
             raise AssertionError(msg)
 
-        return split_idx, split_threshold
+        return best_feature, best_threshold
 
     def _information_gain(
         self,
         y: NDArray[np.integer],
-        X_column: NDArray[np.float64],
+        feature_values: NDArray[np.float64],
         threshold: float,
     ) -> float:
-        """Calculate the information gain for a given split threshold.
+        """Measure how much a split improves purity.
 
-        Parameters
-        ----------
-        y : NDArray[np.integer]
-            The target variable.
-        X_column : NDArray[np.float64]
-            The feature column to split on.
-        threshold : float
-            The split threshold.
-
-        Returns
-        -------
-        float
-            The information gain.
-
+        High information gain = good split.
         """
-        # parent entropy
         parent_entropy = self._entropy(y)
 
-        # create children
-        left_idxs, right_idxs = self._split(X_column, threshold)
+        left_indices, right_indices = self._split(feature_values, threshold)
 
-        if len(left_idxs) == 0 or len(right_idxs) == 0:
-            return 0
+        if len(left_indices) == 0 or len(right_indices) == 0:
+            return 0.0
+
+        n = len(y)
+        n_left, n_right = len(left_indices), len(right_indices)
+
+        left_entropy = self._entropy(y[left_indices])
+        right_entropy = self._entropy(y[right_indices])
 
         # calculate the weighted avg. entropy of children
-        n = len(y)
-        n_l, n_r = len(left_idxs), len(right_idxs)
-        e_l, e_r = self._entropy(y[left_idxs]), self._entropy(y[right_idxs])
-        child_entropy = (n_l / n) * e_l + (n_r / n) * e_r
+        child_entropy = (n_left / n) * left_entropy + (n_right / n) * right_entropy
 
-        # return the information gain
+        # information gain is the reduction in entropy
         return parent_entropy - child_entropy
 
     def _split(
         self,
-        X_column: NDArray[np.float64],
-        split_thresh: float,
+        feature_values: NDArray[np.float64],
+        threshold: float,
     ) -> tuple[NDArray[np.integer], NDArray[np.integer]]:
-        """Split the data based on the split threshold.
-
-        Parameters
-        ----------
-        X_column : NDArray[np.float64]
-            The input feature column.
-        split_thresh : float
-            The threshold value for the split.
-
-        Returns
-        -------
-        tuple[NDArray[np.integer], NDArray[np.integer]]
-            The indices of the left and right splits.
-
         """
-        left_idxs = np.argwhere(X_column <= split_thresh).flatten()
-        right_idxs = np.argwhere(X_column > split_thresh).flatten()
-        return left_idxs, right_idxs
+        Split indices based on a threshold.
+
+        Left:  value <= threshold
+        Right: value > threshold
+        """
+        left_indices = np.argwhere(feature_values <= threshold).flatten()
+        right_indices = np.argwhere(feature_values > threshold).flatten()
+        return left_indices, right_indices
 
     def _entropy(self, y: NDArray[np.integer]) -> float:
-        """Return the entropy of y.
+        """Measure how mixed the labels are.
 
-        formula: H(y) = -Σ(p * log(p)) where p is the relative frequency of each class.
+        - 0 → perfectly pure (only one class)
+        - higher → more mixed
         """
-        hist = np.bincount(y)  # count the raw frequencies of each class
-        ps = hist / len(y)  # calculate the relative frequencies
-        return -np.sum([p * np.log(p) for p in ps if p > 0])
+        counts = np.bincount(y)
+        probabilities = counts / len(y)
+        return -np.sum([p * np.log(p) for p in probabilities if p > 0])
 
-    def _most_common_label(self, y: NDArray[np.integer]) -> Literal[0, 1]:
-        """Return the most common label in y: 0 or 1 (Binary Classification)."""
-        counter = Counter(y)
-        return counter.most_common(1)[0][0]
+    def _most_common_label(self, y: NDArray[np.integer]) -> int:
+        """Return the most frequent class in y."""
+        return Counter(y).most_common(1)[0][0]
 
     def predict(self, X: NDArray[np.float64]) -> NDArray[np.integer]:
-        """Predict the class labels for the input data X.
+        """Predict class labels for each sample in X.
 
-        Parameters
-        ----------
-        X : NDArray[np.float64]
-            The input data to predict.
-
-        Returns
-        -------
-        NDArray[np.integer]
-            The predicted class labels.
-
+        Each sample is passed through the tree until a leaf is reached.
         """
-        if self.root is not None:
-            return np.array([self._traverse_tree(x, self.root) for x in X])
-        msg = "The decision tree has not been fitted yet. Call fit() before predict()."
-        raise AssertionError(msg)
+        if self.root is None:
+            msg = "The decision tree has not been fitted yet. Call fit() before predict()."
+            raise AssertionError(msg)
+
+        return np.array([self._traverse_tree(x, self.root) for x in X])
 
     def _traverse_tree(self, x: NDArray[np.float64], node: Node) -> int:
-        """Traverse the decision tree to predict the class label for a single sample x.
-
-        Parameters
-        ----------
-        x : NDArray[np.float64]
-            The input sample to predict.
-        node : Node
-            The current node in the decision tree.
-
-        Returns
-        -------
-        int
-            The predicted class label (0 or 1).
-
-        """
-        # if node.is_leaf_node():  # same thing but type checker doesn't understand it
+        """Follow the decision path for a single sample."""
+        # check if this is a leaf node (i.e., has a value)
         if node.value is not None:
             return node.value
 
-        # if the node is not a leaf node (value is None), then it has a feature and threshold to split on
-        if node.feature is None or node.threshold is None or node.left is None or node.right is None:
+        if (
+            node.feature_index is None
+            or node.threshold is None
+            or node.left is None
+            or node.right is None
+        ):
             msg = (
-                "Something bad happened in the code. Non-leaf nodes should have feature, threshold, left, right set. "
+                "Invalid tree structure. "
+                "Non-leaf nodes should have feature, threshold, left, right set."
                 "Check method _grow_tree."
             )
             raise AssertionError(msg)
 
-        # if it is not a leaf node: traverse tree
-        if x[node.feature] <= node.threshold:
-            # go left if the feature value is less than or equal to the threshold
+        # if it is not a leaf node, traverse to the next node
+        if x[node.feature_index] <= node.threshold:
             return self._traverse_tree(x, node.left)
         return self._traverse_tree(x, node.right)
