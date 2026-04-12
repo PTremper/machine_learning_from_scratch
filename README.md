@@ -103,13 +103,13 @@ Run `uv sync` to install required libraries into the venv. (only NumPy and tqdm 
 Then run any demo script like
 
 ```
-uv run -m machine_learning_from_scratch.random_forest.demo.py
+uv run -m machine_learning_from_scratch.random_forest.demo
 ```
 
 or 
 
 ```
-python -m machine_learning_from_scratch.random_forest.demo.py
+python -m machine_learning_from_scratch.random_forest.demo
 ```
 
 from the root folder. 
