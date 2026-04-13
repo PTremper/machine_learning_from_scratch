@@ -28,7 +28,8 @@ ignore = [
     "N803",    # ignore argument naming convention since features are conventionally named X_*
     "T201",    # ignore print statements since demo code uses them intentionally
     "RET505",  # ignore unnecessary else statements since they can be semantically meaningful
-    "TC002",   # ignore calling for type checking block imports to not bloat the code
+    "TC002",   # don't ask for type checking block imports to not bloat the code
+    "ERA001",  # don't warn about commented out code
     ]
 
 [tool.ruff.lint.per-file-ignores]

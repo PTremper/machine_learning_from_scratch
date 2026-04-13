@@ -5,20 +5,27 @@ from machine_learning_from_scratch.utils.metrics import accuracy
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 
-data = datasets.load_breast_cancer()
-X, y = data.data, data.target
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=1234,
-)
+def main() -> None:
+    """Demo of the Decision Tree classifier on the breast cancer dataset."""
+    data = datasets.load_breast_cancer()
+    X, y = data.data, data.target
 
-clf = DecisionTree()
-clf.fit(X_train, y_train)
-predictions = clf.predict(X_test)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.2,
+        random_state=1234,
+    )
 
-acc = accuracy(y_test, predictions)
+    clf = DecisionTree()
+    clf.fit(X_train, y_train)
+    predictions = clf.predict(X_test)
 
-print(f"Accuracy: {acc:.3f}")
+    acc = accuracy(y_test, predictions)
+
+    print(f"Accuracy: {acc:.3f}")
+
+
+if __name__ == "__main__":
+    main()
