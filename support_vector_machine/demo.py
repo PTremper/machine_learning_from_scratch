@@ -1,4 +1,10 @@
-"""Demo of the Support Vector Machine classifier on a benchmark dataset."""
+"""Demo of the Support Vector Machine classifier on a benchmark dataset.
+
+This implementation is based on:
+- https://www.youtube.com/watch?v=T9UcK-TxQGw&list=PLcWfeUsAys2k_xub3mHks85sBHZvg24Jd&index=10
+- https://github.com/AssemblyAI-Community/Machine-Learning-From-Scratch/blob/main/09%20SVM/svm.py
+
+"""
 
 import argparse
 
@@ -12,7 +18,7 @@ from sklearn import datasets
 from sklearn.model_selection import train_test_split
 
 
-def get_hyperplane_value(  # noqa: D103
+def get_decision_boundary_y(  # noqa: D103
     x: float,
     w: NDArray[np.float64],
     b: float,
@@ -25,7 +31,7 @@ def main() -> None:
     """Support Vector Machine Demo."""
     parser = argparse.ArgumentParser(description="Support Vector Machine Demo")
     parser.add_argument("--n_iters", type=int, default=1000, help="Number of iterations")
-    parser.add_argument("--random_state", type=int, default=40, help="Random state")
+    parser.add_argument("--random_state", type=int, help="Random state")
     args = parser.parse_args()
 
     X, y = datasets.make_blobs(
@@ -35,8 +41,6 @@ def main() -> None:
         cluster_std=1.05,
         random_state=args.random_state,
     )
-
-    y = np.where(y == 0, -1, 1)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=123)
 
@@ -55,14 +59,14 @@ def main() -> None:
     x0_1 = np.amin(X[:, 0])
     x0_2 = np.amax(X[:, 0])
 
-    x1_1 = get_hyperplane_value(x0_1, clf.w, clf.b, 0)
-    x1_2 = get_hyperplane_value(x0_2, clf.w, clf.b, 0)
+    x1_1 = get_decision_boundary_y(x0_1, clf.w, clf.b, 0)
+    x1_2 = get_decision_boundary_y(x0_2, clf.w, clf.b, 0)
 
-    x1_1_m = get_hyperplane_value(x0_1, clf.w, clf.b, -1)
-    x1_2_m = get_hyperplane_value(x0_2, clf.w, clf.b, -1)
+    x1_1_m = get_decision_boundary_y(x0_1, clf.w, clf.b, -1)
+    x1_2_m = get_decision_boundary_y(x0_2, clf.w, clf.b, -1)
 
-    x1_1_p = get_hyperplane_value(x0_1, clf.w, clf.b, 1)
-    x1_2_p = get_hyperplane_value(x0_2, clf.w, clf.b, 1)
+    x1_1_p = get_decision_boundary_y(x0_1, clf.w, clf.b, 1)
+    x1_2_p = get_decision_boundary_y(x0_2, clf.w, clf.b, 1)
 
     ax.plot([x0_1, x0_2], [x1_1, x1_2], "y--")
     ax.plot([x0_1, x0_2], [x1_1_m, x1_2_m], "k")

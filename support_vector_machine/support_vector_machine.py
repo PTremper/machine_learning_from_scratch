@@ -6,20 +6,23 @@ This implementation is based on:
 
 """
 
+from __future__ import annotations
+
 import numpy as np
 from numpy.typing import NDArray
 
 
 class SVM:
-    """A simple support vector machine.
+    """
+    A simple linear Support Vector Machine (SVM) classifier.
 
-    Methods
-    -------
-    fit(X, y)
-        Fit the SVM to the training data.
-    predict(X)
-        Predict the class labels for the input data.
+    The goal is to find a boundary (line, plane, etc.) that separates two classes
+    while maximizing the margin between them.
 
+    This implementation uses:
+    - hinge loss
+    - L2 regularization
+    - stochastic gradient descent (SGD)
     """
 
     def __init__(
@@ -28,7 +31,20 @@ class SVM:
         lambda_param: float = 0.01,
         n_iters: int = 1000,
     ) -> None:
-        self.lr = learning_rate
+        """Initialize the SVM model.
+
+        Parameters
+        ----------
+        learning_rate:
+            Step size for updating the model parameters.
+
+        lambda_param:
+            Strength of regularization (controls how large weights can grow).
+
+        n_iters:
+            Number of passes over the dataset.
+        """
+        self.learning_rate = learning_rate
         self.lambda_param = lambda_param
         self.n_iters = n_iters
 
@@ -36,27 +52,53 @@ class SVM:
         self.b: float
 
     def fit(self, X: NDArray[np.float64], y: NDArray[np.integer]) -> None:
-        """Fits the SVM model to the training data."""
-        _n_samples, n_features = X.shape
+        """Train the SVM on the given data.
 
-        # Convert labels to -1 and 1
-        y_ = np.where(y <= 0, -1, 1)
+        The algorithm repeatedly:
+        - checks whether each sample satisfies the margin condition
+        - updates the weights and bias if it does not
+        """
+        n_samples, n_features = X.shape
 
-        # init weights
+        # Convert labels to -1 and +1 (required for SVM formulation)
+        y_transformed = np.where(y <= 0, -1, 1)
+
+        # Initialize weights randomly and bias to zero
         rng = np.random.default_rng()
         self.w = rng.normal(size=n_features)
         self.b = 0.0
 
         for _ in range(self.n_iters):
-            for idx, x_i in enumerate(X):
-                condition = y_[idx] * (np.dot(x_i, self.w) - self.b) >= 1
+            # Shuffle samples each iteration (improves SGD behavior)
+            for idx in rng.permutation(n_samples):
+                x_i = X[idx]
+                y_i = y_transformed[idx]
+
+                # Check if sample satisfies margin condition:
+                # y * (w · x + b) >= 1
+                condition = y_i * (np.dot(x_i, self.w) + self.b) >= 1
+
                 if condition:
-                    self.w -= self.lr * (2 * self.lambda_param * self.w)
+                    # If condition is satisfied:
+                    # only apply regularization (shrink weights slightly)
+                    self.w -= self.learning_rate * (2 * self.lambda_param * self.w)
                 else:
-                    self.w -= self.lr * (2 * self.lambda_param * self.w - np.dot(x_i, y_[idx]))
-                    self.b -= self.lr * y_[idx]
+                    # If condition is violated:
+                    # update weights to better classify this sample
+                    # and increase margin
+                    self.w -= self.learning_rate * (2 * self.lambda_param * self.w - y_i * x_i)
+
+                    # Update bias (not regularized)
+                    self.b += self.learning_rate * y_i
 
     def predict(self, X: NDArray[np.float64]) -> NDArray[np.integer]:
-        """Predicts the class labels for the given input data."""
-        approx = np.dot(X, self.w) - self.b
-        return np.sign(approx)
+        """
+        Predict class labels for each sample in X.
+
+        A sample is classified based on which side of the boundary it lies on.
+        """
+        # Compute decision scores
+        scores = np.dot(X, self.w) + self.b
+
+        # Convert to class labels (0 or 1)
+        return np.where(scores >= 0, 1, 0)
